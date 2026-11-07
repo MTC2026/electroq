@@ -1,1 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
 
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>ElectroQ | Login</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body class="login-page">
+
+    <div class="login-container">
+
+        <div class="logo">
+
+            <span class="logo-icon">E</span>
+
+            <h1>ElectroQ</h1>
+
+        </div>
+
+        <p class="subtitle">
+            Your intelligent AI assistant.
+        </p>
+
+        <div class="login-box">
+
+            <h2>Welcome Back</h2>
+
+            <p class="login-description">
+                Sign in to continue to ElectroQ.
+            </p>
+
+            <input
+                type="email"
+                id="email"
+                placeholder="Email address"
+                autocomplete="email"
+            >
+
+            <input
+                type="password"
+                id="password"
+                placeholder="Password"
+                autocomplete="current-password"
+            >
+
+            <button onclick="signIn()" class="primary-button">
+
+                Login
+
+            </button>
+
+            <button onclick="signUp()" class="secondary-button">
+
+                Create Account
+
+            </button>
+
+            <p id="auth-message"></p>
+
+        </div>
+
+        <p class="footer-text">
+
+            ElectroQ AI © 2026
+
+        </p>
+
+    </div>
+
+
+    <!-- Supabase library -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- ElectroQ application -->
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>
