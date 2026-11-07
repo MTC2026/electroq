@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>ElectroQ | AI Chat</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body class="chat-page">
+
+    <div class="chat-layout">
+
+        <!-- SIDEBAR -->
+
+        <aside class="sidebar">
+
+            <div class="sidebar-logo">
+
+                <span class="logo-icon">E</span>
+
+                <h2>ElectroQ</h2>
+
+            </div>
+
+            <button class="new-chat-button"
+                    onclick="clearChat()">
+
+                + New Chat
+
+            </button>
+
+            <div class="sidebar-bottom">
+
+                <button
+                    class="logout-button"
+                    onclick="signOut()">
+
+                    Logout
+
+                </button>
+
+            </div>
+
+        </aside>
+
+
+        <!-- MAIN CHAT -->
+
+        <main class="main-chat">
+
+            <header class="chat-header">
+
+                <h2>ElectroQ</h2>
+
+                <span class="status-indicator">
+
+                    ● AI Online
+
+                </span>
+
+            </header>
+
+
+            <div id="chat-box" class="chat-box">
+
+                <div class="welcome-message">
+
+                    <h1>What can I help you with?</h1>
+
+                    <p>
+
+                        Ask ElectroQ about electronics,
+                        Arduino, coding, and more.
+
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- MESSAGE INPUT -->
+
+            <div class="input-area">
+
+                <div class="input-container">
+
+                    <textarea
+                        id="user-input"
+                        placeholder="Message ElectroQ..."
+                        rows="1"
+                    ></textarea>
+
+                    <button
+                        id="send-button"
+                        onclick="sendMessage()">
+
+                        ↑
+
+                    </button>
+
+                </div>
+
+                <p class="disclaimer">
+
+                    ElectroQ can make mistakes.
+                    Verify important information.
+
+                </p>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="app.js"></script>
+
+
+    <script>
+
+        // Check authentication before displaying chat.
+
+        requireLogin();
+
+
+        // Enter key sends the message.
+
+        document.getElementById("user-input")
+            .addEventListener("keydown", function(event) {
+
+                if (
+                    event.key === "Enter" &&
+                    !event.shiftKey
+                ) {
+
+                    event.preventDefault();
+
+                    sendMessage();
+
+                }
+
+            });
+
+
+        // Clear the current conversation.
+
+        function clearChat() {
+
+            const chatBox = document.getElementById("chat-box");
+
+            chatBox.innerHTML = `
+
+                <div class="welcome-message">
+
+                    <h1>What can I help you with?</h1>
+
+                    <p>
+                        Ask ElectroQ about electronics,
+                        Arduino, coding, and more.
+                    </p>
+
+                </div>
+
+            `;
+
+        }
+
+    </script>
+
+</body>
+
+</html>
