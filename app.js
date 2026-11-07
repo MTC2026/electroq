@@ -37,11 +37,39 @@ async function signUp() {
     const message = document.getElementById("auth-message");
 
     if (!email || !password) {
-
-        message.textContent = "Enter your email and password.";
-
+        message.textContent = "Enter email and password.";
         return;
     }
+
+    message.textContent = "Creating account...";
+
+    const { data, error } = await supabaseClient.auth.signUp({
+
+        email: email,
+
+        password: password,
+
+        options: {
+
+            emailRedirectTo:
+                "https://mtc2026.github.io/electroq/"
+
+        }
+
+    });
+
+    if (error) {
+
+        message.textContent = error.message;
+
+        return;
+
+    }
+
+    message.textContent =
+        "Account created! Please check your email to confirm.";
+
+}
 
     message.textContent = "Creating your account...";
 
