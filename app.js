@@ -31,15 +31,53 @@ const supabaseClient = window.supabase.createClient(
 async function signUp() {
 
     const email = document.getElementById("email").value.trim();
-
     const password = document.getElementById("password").value;
-
     const message = document.getElementById("auth-message");
 
+    const button = document.querySelector(".secondary-button");
+
     if (!email || !password) {
-        message.textContent = "Enter email and password.";
+        message.textContent = "Enter your email and password.";
         return;
     }
+
+    button.disabled = true;
+    message.textContent = "Creating your ElectroQ account...";
+
+    try {
+
+        const { data, error } = await supabaseClient.auth.signUp({
+
+            email: email,
+            password: password,
+
+            options: {
+                emailRedirectTo:
+                    "https://mtc2026.github.io/electroq/"
+            }
+
+        });
+
+        if (error) {
+            throw error;
+        }
+
+        message.textContent =
+            "Account created! Check your email for confirmation.";
+
+    } catch (error) {
+
+        console.error("Signup error:", error);
+
+        message.textContent =
+            error.message || "Signup failed. Please try again.";
+
+    } finally {
+
+        button.disabled = false;
+
+    }
+}
 
     message.textContent = "Creating account...";
 
