@@ -13,10 +13,10 @@ from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
 
-SUPABASE_URL = os.environ["https://uqbobolkzxuvfsczhppw.supabase.co"].rstrip("/")
-SUPABASE_PUBLISHABLE_KEY = os.environ["sb_publishable_8004ceJmYgLNxCmYj4BwIw_jklID26e"]
+SUPABASE_URL = os.environ["SUPABASE_URL"].rstrip("/")
+SUPABASE_PUBLISHABLE_KEY = os.environ["SUPABASE_PUBLISHABLE_KEY"]
 
-FRONTEND_ORIGIN = os.environ["https://mtc2026.github.io"].rstrip("/")
+FRONTEND_ORIGIN = os.environ["FRONTEND_ORIGIN"].rstrip("/")
 
 
 # -----------------------------------
@@ -232,4 +232,4 @@ if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 5000))
-    )
+        )
