@@ -334,9 +334,8 @@ def chat():
         # changing this call.
 
         result = hf_client.predict(
-            message,
-            [],
-            api_name="chat"
+    message,
+    api_name="/chat"
         )
 
         # ----------------------------------
