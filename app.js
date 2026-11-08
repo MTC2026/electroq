@@ -1,22 +1,26 @@
-// ==========================================
+// ==================================================
 // ELECTROQ CONFIGURATION
-// ==========================================
+// ==================================================
 
-// Replace these with your actual Supabase values.
-
+// Your Supabase Project URL
 const SUPABASE_URL = "https://uqbobolkzxuvfsczhppw.supabase.co";
 
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_8004ceJmYgLNxCmYj4BwIw_jklID26e";
+// Your Supabase Publishable Key
+const SUPABASE_PUBLISHABLE_KEY =
+    "sb_publishable_8004ceJmYgLNxCmYj4BwIw_jklID26e";
+
+// Your Render Backend URL
+const BACKEND_URL =
+    "https://electroq.onrender.com";
+
+// Your GitHub Pages URL
+const SITE_URL =
+    "https://mtc2026.github.io/electroq/";
 
 
-// Replace this with your actual Render backend URL.
-
-const BACKEND_URL = "https://electroq.onrender.com";
-
-
-// ==========================================
+// ==================================================
 // SUPABASE INITIALIZATION
-// ==========================================
+// ==================================================
 
 const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
@@ -24,54 +28,111 @@ const supabaseClient = window.supabase.createClient(
 );
 
 
-// ==========================================
-// LOGIN AND SIGNUP
-// ==========================================
+// ==================================================
+// HELPER: DISPLAY AUTHENTICATION MESSAGE
+// ==================================================
 
-async function signUp() {
+function showAuthMessage(message, isError = true) {
 
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
-    const message = document.getElementById("auth-message");
+    const messageElement =
+        document.getElementById("auth-message");
 
-    if (!email || !password) {
-        message.textContent = "Enter your email and password.";
+    if (!messageElement) {
         return;
     }
 
-    message.textContent = "Creating your account...";
+    messageElement.textContent = message;
+
+    messageElement.style.color = isError
+        ? "#ff5555"
+        : "#36d67c";
+}
+
+
+// ==================================================
+// SIGNUP
+// ==================================================
+
+async function signUp() {
+
+    const email =
+        document.getElementById("email").value.trim();
+
+    const password =
+        document.getElementById("password").value;
+
+    const button =
+        document.querySelector(".secondary-button");
+
+    if (!email || !password) {
+
+        showAuthMessage(
+            "Please enter your email and password."
+        );
+
+        return;
+    }
+
+    if (password.length < 8) {
+
+        showAuthMessage(
+            "Password must contain at least 8 characters."
+        );
+
+        return;
+    }
+
+    button.disabled = true;
+
+    showAuthMessage(
+        "Creating your ElectroQ account...",
+        false
+    );
 
     try {
 
-        const { data, error } = await supabaseClient.auth.signUp({
+        const { data, error } =
+            await supabaseClient.auth.signUp({
 
-            email: email,
+                email: email,
 
-            password: password,
+                password: password,
 
-            options: {
-                emailRedirectTo:
-                    "https://mtc2026.github.io/electroq/"
-            }
+                options: {
 
-        });
+                    emailRedirectTo: SITE_URL
+
+                }
+
+            });
 
         if (error) {
-            message.textContent = error.message;
+
+            showAuthMessage(error.message);
+
             return;
         }
 
+        // Email confirmation is enabled.
+        // The user must confirm their email
+        // before accessing the application.
+
         if (data.user && !data.session) {
 
-            message.textContent =
-                "Account created! Please check your email to confirm your account.";
+            showAuthMessage(
+                "Account created! Please check your email to confirm your account.",
+                false
+            );
 
-        } else if (data.session) {
+            return;
+        }
 
-            message.textContent =
-                "Account created successfully!";
+        // If email confirmation is disabled,
+        // Supabase may create an active session.
 
-            window.location.href = "chat.html";
+        if (data.session) {
+
+            window.location.replace("chat.html");
 
         }
 
@@ -79,201 +140,260 @@ async function signUp() {
 
         console.error("Signup error:", error);
 
-        message.textContent =
-            "Signup failed. Please try again.";
+        showAuthMessage(
+            "Signup failed. Please try again."
+        );
+
+    } finally {
+
+        button.disabled = false;
 
     }
 
 }
 
-    message.textContent = "Creating account...";
 
-    const { data, error } = await supabaseClient.auth.signUp({
-
-        email: email,
-
-        password: password,
-
-        options: {
-
-            emailRedirectTo:
-                "https://mtc2026.github.io/electroq/"
-
-        }
-
-    });
-
-    if (error) {
-
-        message.textContent = error.message;
-
-        return;
-
-    }
-
-    message.textContent =
-        "Account created! Please check your email to confirm.";
-
-}
-
-    message.textContent = "Creating your account...";
-
-    const { data, error } = await supabaseClient.auth.signUp({
-
-        email: email,
-
-        password: password
-
-    });
-
-    if (error) {
-
-        message.textContent = error.message;
-
-        return;
-    }
-
-    message.textContent =
-        "Account created. Check your email if confirmation is required.";
-}
-
-
-// ==========================================
+// ==================================================
 // LOGIN
-// ==========================================
+// ==================================================
 
 async function signIn() {
 
-    const email = document.getElementById("email").value.trim();
+    const email =
+        document.getElementById("email").value.trim();
 
-    const password = document.getElementById("password").value;
+    const password =
+        document.getElementById("password").value;
 
-    const message = document.getElementById("auth-message");
+    const button =
+        document.querySelector(".primary-button");
 
     if (!email || !password) {
 
-        message.textContent = "Enter your email and password.";
+        showAuthMessage(
+            "Please enter your email and password."
+        );
 
         return;
     }
 
-    message.textContent = "Logging in...";
+    button.disabled = true;
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-
-        email: email,
-
-        password: password
-
-    });
-
-    if (error) {
-
-        message.textContent = error.message;
-
-        return;
-    }
-
-    window.location.href = "chat.html";
-}
-
-
-// ==========================================
-// LOGOUT
-// ==========================================
-
-async function signOut() {
-
-    await supabaseClient.auth.signOut();
-
-    window.location.href = "index.html";
-}
-
-
-// ==========================================
-// CHECK AUTHENTICATION
-// ==========================================
-
-async function requireLogin() {
-
-    const { data, error } = await supabaseClient.auth.getSession();
-
-    if (error || !data.session) {
-
-        window.location.href = "index.html";
-
-        return null;
-    }
-
-    return data.session;
-}
-
-
-// ==========================================
-// SEND MESSAGE TO ELECTROQ
-// ==========================================
-
-async function sendMessage() {
-
-    const input = document.getElementById("user-input");
-
-    const message = input.value.trim();
-
-    if (!message) return;
-
-    const chatBox = document.getElementById("chat-box");
-
-    const sendButton = document.getElementById("send-button");
-
-    input.value = "";
-
-    // Display user's message.
-
-    const userMessage = document.createElement("div");
-
-    userMessage.className = "message user-message";
-
-    userMessage.textContent = message;
-
-    chatBox.appendChild(userMessage);
-
-
-    // Display loading message.
-
-    const loadingMessage = document.createElement("div");
-
-    loadingMessage.className = "message ai-message";
-
-    loadingMessage.textContent = "ElectroQ is thinking...";
-
-    chatBox.appendChild(loadingMessage);
-
-    chatBox.scrollTop = chatBox.scrollHeight;
-
-    sendButton.disabled = true;
-
+    showAuthMessage(
+        "Signing in...",
+        false
+    );
 
     try {
 
-        // Get the current Supabase session.
+        const { data, error } =
+            await supabaseClient.auth.signInWithPassword({
+
+                email: email,
+
+                password: password
+
+            });
+
+        if (error) {
+
+            showAuthMessage(
+                "Login failed. Check your email and password."
+            );
+
+            return;
+        }
+
+        // Check whether Supabase returned a session.
+
+        if (!data.session) {
+
+            showAuthMessage(
+                "Unable to create a session. Please try again."
+            );
+
+            return;
+        }
+
+        // Login successful.
+
+        window.location.replace("chat.html");
+
+    } catch (error) {
+
+        console.error("Login error:", error);
+
+        showAuthMessage(
+            "An unexpected error occurred."
+        );
+
+    } finally {
+
+        button.disabled = false;
+
+    }
+
+}
+
+
+// ==================================================
+// CHECK AUTHENTICATION
+// ==================================================
+
+async function requireLogin() {
+
+    try {
 
         const { data, error } =
             await supabaseClient.auth.getSession();
 
         if (error || !data.session) {
 
-            window.location.href = "index.html";
+            window.location.replace("index.html");
 
-            return;
+            return null;
         }
 
+        // Check the authenticated user's email.
 
-        // Get the access token.
+        const user = data.session.user;
 
-        const accessToken = data.session.access_token;
+        if (!user.email_confirmed_at) {
+
+            await supabaseClient.auth.signOut();
+
+            window.location.replace("index.html");
+
+            return null;
+        }
+
+        return data.session;
+
+    } catch (error) {
+
+        console.error(
+            "Authentication check failed:",
+            error
+        );
+
+        window.location.replace("index.html");
+
+        return null;
+    }
+
+}
 
 
-        // Send the request to Render.
+// ==================================================
+// LOGOUT
+// ==================================================
+
+async function signOut() {
+
+    try {
+
+        const { error } =
+            await supabaseClient.auth.signOut();
+
+        if (error) {
+
+            console.error(
+                "Logout error:",
+                error
+            );
+
+        }
+
+    } finally {
+
+        window.location.replace("index.html");
+
+    }
+
+}
+
+
+// ==================================================
+// SEND MESSAGE TO ELECTROQ
+// ==================================================
+
+async function sendMessage() {
+
+    const input =
+        document.getElementById("user-input");
+
+    const chatBox =
+        document.getElementById("chat-box");
+
+    const sendButton =
+        document.getElementById("send-button");
+
+    if (!input || !chatBox || !sendButton) {
+        return;
+    }
+
+    const message = input.value.trim();
+
+    if (!message) {
+        return;
+    }
+
+    if (sendButton.disabled) {
+        return;
+    }
+
+    // Get the current session.
+
+    const { data, error } =
+        await supabaseClient.auth.getSession();
+
+    if (error || !data.session) {
+
+        window.location.replace("index.html");
+
+        return;
+    }
+
+    const accessToken =
+        data.session.access_token;
+
+    // Display the user's message.
+
+    const userMessage =
+        document.createElement("div");
+
+    userMessage.className =
+        "message user-message";
+
+    userMessage.textContent = message;
+
+    chatBox.appendChild(userMessage);
+
+    // Clear the input.
+
+    input.value = "";
+
+    // Create loading message.
+
+    const loadingMessage =
+        document.createElement("div");
+
+    loadingMessage.className =
+        "message ai-message";
+
+    loadingMessage.textContent =
+        "ElectroQ is thinking...";
+
+    chatBox.appendChild(loadingMessage);
+
+    chatBox.scrollTop =
+        chatBox.scrollHeight;
+
+    sendButton.disabled = true;
+
+    try {
+
+        // Send authenticated request to Render.
 
         const response = await fetch(
             `${BACKEND_URL}/api/chat`,
@@ -286,7 +406,8 @@ async function sendMessage() {
 
                     "Content-Type": "application/json",
 
-                    "Authorization": `Bearer ${accessToken}`
+                    "Authorization":
+                        `Bearer ${accessToken}`
 
                 },
 
@@ -299,44 +420,80 @@ async function sendMessage() {
             }
         );
 
-
-        // Handle expired or invalid authentication.
+        // Handle expired authentication.
 
         if (response.status === 401) {
 
             await supabaseClient.auth.signOut();
 
-            window.location.href = "index.html";
+            window.location.replace("index.html");
 
             return;
         }
 
-
-        const result = await response.json();
-
+        const result =
+            await response.json();
 
         if (!response.ok) {
 
-            throw new Error(result.error || "Request failed.");
+            throw new Error(
+                result.error || "Request failed."
+            );
         }
 
+        // Display AI response.
 
-        // Display the AI response.
-
-        loadingMessage.textContent = result.reply;
-
+        loadingMessage.textContent =
+            result.reply || "No response received.";
 
     } catch (error) {
 
-        loadingMessage.textContent =
-            "ElectroQ is currently unavailable. Please try again.";
+        console.error(
+            "ElectroQ request error:",
+            error
+        );
 
-        console.error(error);
+        loadingMessage.textContent =
+            "ElectroQ is temporarily unavailable.";
 
     } finally {
 
         sendButton.disabled = false;
 
-        chatBox.scrollTop = chatBox.scrollHeight;
+        chatBox.scrollTop =
+            chatBox.scrollHeight;
+
     }
+
 }
+
+
+// ==================================================
+// CLEAR CHAT
+// ==================================================
+
+function clearChat() {
+
+    const chatBox =
+        document.getElementById("chat-box");
+
+    if (!chatBox) {
+        return;
+    }
+
+    chatBox.innerHTML = `
+
+        <div class="welcome-message">
+
+            <h1>What can I help you with?</h1>
+
+            <p>
+                Ask ElectroQ about electronics,
+                Arduino, coding, and more.
+            </p>
+
+        </div>
+
+    `;
+
+        }
