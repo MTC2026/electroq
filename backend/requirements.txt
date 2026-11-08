@@ -1,5 +1,5 @@
 Flask
-Flask-Cors
-Flask-Limiter
+flask-cors
 requests
 gunicorn
+gradio_client
