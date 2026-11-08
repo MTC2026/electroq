@@ -56,12 +56,12 @@ CORS(
 # Render does not download or load the model.
 
 if HF_TOKEN:
-     hf_client = Client(
-    HF_SPACE_ID,
-    token=HF_TOKEN if HF_TOKEN else None
-     )
+            hf_client = Client(
+            HF_SPACE_ID,
+           token=HF_TOKEN if HF_TOKEN else None
+            )
     
-    )
+    
 
 else:
 
