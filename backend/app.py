@@ -1,31 +1,41 @@
 import os
+import time
+import threading
+
 import requests
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from gradio_client import Client
 
 
-# -----------------------------------
-# APPLICATION CONFIGURATION
-# -----------------------------------
+# ==========================================
+# ELECTROQ BACKEND CONFIGURATION
+# ==========================================
 
 app = Flask(__name__)
 
-SUPABASE_URL = os.environ["SUPABASE_URL"].rstrip("/")
-SUPABASE_PUBLISHABLE_KEY = os.environ["SUPABASE_PUBLISHABLE_KEY"]
+SUPABASE_URL = os.environ.get(
+    "SUPABASE_URL", ""
+).rstrip("/")
 
-FRONTEND_ORIGIN = os.environ["FRONTEND_ORIGIN"].rstrip("/")
+SUPABASE_PUBLISHABLE_KEY = os.environ.get(
+    "SUPABASE_PUBLISHABLE_KEY", ""
+)
+
+FRONTEND_ORIGIN = os.environ.get(
+    "FRONTEND_ORIGIN",
+    "https://mtc2026.github.io"
+)
+
+HF_SPACE_ID = "DEVELOPERDARSHAN/electroq"
+
+HF_TOKEN = os.environ.get("HF_TOKEN", "")
 
 
-# -----------------------------------
-# CORS
-# -----------------------------------
-
-# Only allow your actual frontend origin.
-# CORS is not authentication.
-# The backend still verifies every access token.
+# ==========================================
+# CORS CONFIGURATION
+# ==========================================
 
 CORS(
     app,
@@ -33,203 +43,357 @@ CORS(
         r"/api/*": {
             "origins": [FRONTEND_ORIGIN]
         }
-    },
-    allow_headers=["Authorization", "Content-Type"],
-    methods=["GET", "POST", "OPTIONS"]
+    }
 )
 
 
-# -----------------------------------
-# RATE LIMITING
-# -----------------------------------
+# ==========================================
+# HUGGING FACE CONNECTION
+# ==========================================
 
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=["100 per hour"]
-)
+# Connect to your existing Hugging Face Space.
+# The model remains hosted on Hugging Face.
+# Render does not download or load the model.
 
+if HF_TOKEN:
 
-# -----------------------------------
-# SECURITY HEADERS
-# -----------------------------------
-
-@app.after_request
-def add_security_headers(response):
-
-    response.headers["X-Content-Type-Options"] = "nosniff"
-
-    response.headers["X-Frame-Options"] = "DENY"
-
-    response.headers["Referrer-Policy"] = "no-referrer"
-
-    response.headers["Cache-Control"] = "no-store"
-
-    response.headers["Permissions-Policy"] = (
-        "camera=(), microphone=(), geolocation=()"
+    hf_client = Client(
+        HF_SPACE_ID,
+        hf_token=HF_TOKEN
     )
 
-    return response
+else:
+
+    hf_client = Client(HF_SPACE_ID)
 
 
-# -----------------------------------
-# AUTHENTICATION
-# -----------------------------------
+# ==========================================
+# RATE LIMITING
+# ==========================================
 
-def verify_supabase_user():
+RATE_LIMIT = 20
 
-    authorization = request.headers.get("Authorization", "")
+RATE_WINDOW = 60
+
+request_counts = {}
+
+rate_limit_lock = threading.Lock()
+
+
+def check_rate_limit():
+
+    ip_address = request.remote_addr or "unknown"
+
+    current_time = time.time()
+
+    with rate_limit_lock:
+
+        if ip_address not in request_counts:
+
+            request_counts[ip_address] = []
+
+        request_counts[ip_address] = [
+
+            timestamp
+
+            for timestamp in request_counts[ip_address]
+
+            if current_time - timestamp < RATE_WINDOW
+
+        ]
+
+        if len(request_counts[ip_address]) >= RATE_LIMIT:
+
+            return False
+
+        request_counts[ip_address].append(current_time)
+
+        return True
+
+
+# ==========================================
+# SUPABASE AUTHENTICATION
+# ==========================================
+
+def get_authenticated_user():
+
+    authorization = request.headers.get(
+        "Authorization",
+        ""
+    )
 
     if not authorization.startswith("Bearer "):
+
         return None
 
-    access_token = authorization.split(" ", 1)[1].strip()
+    access_token = authorization.split(
+        " ",
+        1
+    )[1].strip()
 
     if not access_token:
+
+        return None
+
+    if not SUPABASE_URL or not SUPABASE_PUBLISHABLE_KEY:
+
+        app.logger.error(
+            "Supabase environment variables are missing."
+        )
+
         return None
 
     try:
 
+        # Ask Supabase Auth to validate the access token.
+        # Do not simply decode the JWT and trust its contents.
+
         response = requests.get(
+
             f"{SUPABASE_URL}/auth/v1/user",
 
             headers={
+
                 "apikey": SUPABASE_PUBLISHABLE_KEY,
+
                 "Authorization": f"Bearer {access_token}"
+
             },
 
             timeout=10
+
         )
 
         if response.status_code != 200:
+
             return None
 
         user = response.json()
 
-        # Require a valid user ID.
         if not user.get("id"):
+
             return None
 
         return user
 
     except requests.RequestException:
 
+        app.logger.exception(
+            "Supabase authentication request failed."
+        )
+
         return None
 
 
-# -----------------------------------
+# ==========================================
 # HEALTH CHECK
-# -----------------------------------
+# ==========================================
 
-@app.get("/health")
+@app.route("/health", methods=["GET"])
 def health():
 
     return jsonify({
-        "status": "online"
+
+        "status": "ok",
+
+        "service": "ElectroQ AI Backend"
+
     })
 
 
-# -----------------------------------
-# PROTECTED TEST ENDPOINT
-# -----------------------------------
+# ==========================================
+# PRIVATE TEST ENDPOINT
+# ==========================================
 
-@app.get("/api/private")
-@limiter.limit("20 per minute")
+@app.route("/api/private", methods=["GET"])
 def private_endpoint():
 
-    user = verify_supabase_user()
+    user = get_authenticated_user()
 
     if not user:
 
         return jsonify({
-            "error": "Authentication required"
+
+            "error": "Authentication required."
+
         }), 401
 
     return jsonify({
-        "message": "Authenticated successfully",
+
+        "message": "Authentication successful.",
+
         "user_id": user["id"]
+
     })
 
 
-# -----------------------------------
-# AI ENDPOINT
-# -----------------------------------
+# ==========================================
+# ELECTROQ CHAT ENDPOINT
+# ==========================================
 
-@app.post("/api/chat")
-@limiter.limit("10 per minute")
+@app.route("/api/chat", methods=["POST"])
 def chat():
 
-    # 1. Verify the user's Supabase token.
+    # --------------------------------------
+    # 1. Rate limit
+    # --------------------------------------
 
-    user = verify_supabase_user()
+    if not check_rate_limit():
+
+        return jsonify({
+
+            "error": "Too many requests. Please wait."
+
+        }), 429
+
+    # --------------------------------------
+    # 2. Authenticate user
+    # --------------------------------------
+
+    user = get_authenticated_user()
 
     if not user:
 
         return jsonify({
-            "error": "Authentication required"
+
+            "error": "Invalid or expired session. Please log in again."
+
         }), 401
 
-
-    # 2. Validate the request body.
+    # --------------------------------------
+    # 3. Validate request
+    # --------------------------------------
 
     data = request.get_json(silent=True)
 
     if not isinstance(data, dict):
 
         return jsonify({
-            "error": "Invalid request"
+
+            "error": "Invalid request body."
+
         }), 400
 
-
-    message = data.get("message")
+    message = data.get("message", "")
 
     if not isinstance(message, str):
 
         return jsonify({
-            "error": "Message must be text"
-        }), 400
 
+            "error": "Message must be text."
+
+        }), 400
 
     message = message.strip()
 
     if not message:
 
         return jsonify({
-            "error": "Message cannot be empty"
+
+            "error": "Message cannot be empty."
+
         }), 400
-
-
-    # 3. Limit message size.
 
     if len(message) > 4000:
 
         return jsonify({
-            "error": "Message is too long"
-        }), 413
+
+            "error": "Message is too long."
+
+        }), 400
+
+    # --------------------------------------
+    # 4. Connect to Hugging Face Space
+    # --------------------------------------
+
+    try:
+
+        # Your Space uses Gradio ChatInterface.
+        # The Gradio Client discovers the API.
+        #
+        # The endpoint name may depend on the
+        # Gradio version and configuration.
+
+        result = hf_client.predict(
+
+            message,
+
+            [],
+
+            api_name="/chat"
+
+        )
+
+        # ----------------------------------
+        # 5. Extract response
+        # ----------------------------------
+
+        if isinstance(result, str):
+
+            reply = result
+
+        elif isinstance(result, dict):
+
+            reply = result.get(
+                "text",
+                result.get(
+                    "reply",
+                    result.get(
+                        "value",
+                        str(result)
+                    )
+                )
+            )
+
+        else:
+
+            reply = str(result)
+
+        if not reply:
+
+            return jsonify({
+
+                "error": "The AI returned an empty response."
+
+            }), 502
+
+        # ----------------------------------
+        # 6. Return response to frontend
+        # ----------------------------------
+
+        return jsonify({
+
+            "reply": reply
+
+        })
+
+    except Exception:
+
+        app.logger.exception(
+            "Hugging Face request failed."
+        )
+
+        return jsonify({
+
+            "error": "ElectroQ AI is temporarily unavailable."
+
+        }), 502
 
 
-    # 4. AI model integration goes here.
-    #
-    # IMPORTANT:
-    # Your AI API token must be stored in Render.
-    # Never put it in app.js or chat.html.
-    #
-    # We will connect your actual ElectroQ model here.
-
-
-    return jsonify({
-        "reply": "ElectroQ backend authentication is working.",
-        "user_id": user["id"]
-    })
-
-
-# -----------------------------------
-# START APPLICATION
-# -----------------------------------
+# ==========================================
+# START SERVER
+# ==========================================
 
 if __name__ == "__main__":
 
+    port = int(
+        os.environ.get("PORT", 5000)
+    )
+
     app.run(
+
         host="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000))
-        )
+
+        port=port
+
+    )
