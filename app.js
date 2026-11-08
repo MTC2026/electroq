@@ -448,13 +448,13 @@ async function sendMessage() {
 
     } catch (error) {
 
-        console.error(
-            "ElectroQ request error:",
-            error
-        );
+    console.error(
+        "ElectroQ request error:",
+        error
+    );
 
-        loadingMessage.textContent =
-            "ElectroQ is temporarily unavailable.";
+    loadingMessage.textContent =
+        "Error: " + error.message;
 
     } finally {
 
