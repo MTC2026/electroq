@@ -315,13 +315,9 @@ def chat():
         # Gradio version and configuration.
 
         result = hf_client.predict(
-
-            message,
-
-            [],
-
-            api_name="/chat"
-
+    message,
+    [],
+    api_name="chat"
         )
 
         # ----------------------------------
