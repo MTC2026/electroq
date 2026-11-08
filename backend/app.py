@@ -68,6 +68,27 @@ else:
 
 
 # ==========================================
+# HUGGING FACE API DIAGNOSTIC
+# ==========================================
+
+# This prints the API endpoints exposed by your Space.
+# We need this information to identify the correct
+# api_name for the ElectroQ chat function.
+
+print("========== HUGGING FACE API INFO ==========")
+
+try:
+
+    hf_client.view_api()
+
+except Exception as e:
+
+    print("API inspection error:", str(e))
+
+print("===========================================")
+
+
+# ==========================================
 # RATE LIMITING
 # ==========================================
 
@@ -308,16 +329,14 @@ def chat():
 
     try:
 
-        # Your Space uses Gradio ChatInterface.
-        # The Gradio Client discovers the API.
-        #
-        # The endpoint name may depend on the
-        # Gradio version and configuration.
+        # TEMPORARY DIAGNOSTIC:
+        # We are inspecting the API name before
+        # changing this call.
 
         result = hf_client.predict(
-    message,
-    [],
-    api_name="chat"
+            message,
+            [],
+            api_name="chat"
         )
 
         # ----------------------------------
