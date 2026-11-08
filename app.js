@@ -34,21 +34,19 @@ async function signUp() {
     const password = document.getElementById("password").value;
     const message = document.getElementById("auth-message");
 
-    const button = document.querySelector(".secondary-button");
-
     if (!email || !password) {
         message.textContent = "Enter your email and password.";
         return;
     }
 
-    button.disabled = true;
-    message.textContent = "Creating your ElectroQ account...";
+    message.textContent = "Creating your account...";
 
     try {
 
         const { data, error } = await supabaseClient.auth.signUp({
 
             email: email,
+
             password: password,
 
             options: {
@@ -59,24 +57,33 @@ async function signUp() {
         });
 
         if (error) {
-            throw error;
+            message.textContent = error.message;
+            return;
         }
 
-        message.textContent =
-            "Account created! Check your email for confirmation.";
+        if (data.user && !data.session) {
+
+            message.textContent =
+                "Account created! Please check your email to confirm your account.";
+
+        } else if (data.session) {
+
+            message.textContent =
+                "Account created successfully!";
+
+            window.location.href = "chat.html";
+
+        }
 
     } catch (error) {
 
         console.error("Signup error:", error);
 
         message.textContent =
-            error.message || "Signup failed. Please try again.";
-
-    } finally {
-
-        button.disabled = false;
+            "Signup failed. Please try again.";
 
     }
+
 }
 
     message.textContent = "Creating account...";
